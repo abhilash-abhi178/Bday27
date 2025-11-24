@@ -66,4 +66,5 @@ export default function Screen9({ onReplay }) {
   );
 }
 
-"git.path": "D:\\Program Files\\Git\\cmd\\git.exe"
+
+
