@@ -9,14 +9,10 @@ export default function Screen4({ onNext }) {
   const [popped, setPopped] = useState([false, false, false, false]);
 
   useEffect(() => {
-    console.log("BalloonScreen: mounted");
-    fetch('/api/debug?msg=balloon-mounted').catch((err) => {
-      console.error('BalloonScreen: fetch mount error', err);
-    })
+    fetch('/api/debug?msg=balloon-mounted').catch(() => {});
     return () => {
-      console.log("BalloonScreen: unmounted");
-      fetch('/api/debug?msg=balloon-unmounted').catch((err) => {});
-    }
+      fetch('/api/debug?msg=balloon-unmounted').catch(() => {});
+    };
   }, []);
 
   const wordPositions = [
@@ -26,72 +22,76 @@ export default function Screen4({ onNext }) {
     { left: "71%", top: "32%" },
   ];
 
+  const balloons = [
+    { left: "19%", top: "18%", color: "rgb(251,113,133)" },
+    { left: "38%", top: "24%", color: "rgb(245,158,11)" },
+    { left: "56.7%", top: "23%", color: "rgb(34,197,94)" },
+    { left: "75.7%", top: "18%", color: "rgb(56,189,248)" }
+  ];
+
   const popBalloon = (index) => {
-    const newState = [...popped];
-    newState[index] = true;
-    setPopped(newState);
+    const arr = [...popped];
+    arr[index] = true;
+    setPopped(arr);
   };
 
-  const allPopped = popped.every((p) => p === true);
+  const allPopped = popped.every(Boolean);
 
   return (
     <>
-      {/* OUTER CONTAINER — AUTO FIT TO ALL DEVICES */}
-      <div className="relative min-h-[70vh] md:min-h-[60vh] w-full overflow-visible rounded-3xl backdrop-blur-xl bg-gradient-to-b from-pink-950/35 via-fuchsia-950/30 to-purple-950/35">
-
-        {/* RESPONSIVE SCALE WRAPPER — THIS MAKES IT FIT ALL MOBILES */}
-        <div className="absolute inset-0 scale-[0.78] sm:scale-[0.85] md:scale-100 origin-top">
+      {/* OUTER RESPONSIVE BOX WITH ASPECT RATIO */}
+      <div className="w-full flex justify-center mt-4">
+        <div
+          className="relative w-[95%] max-w-[600px] bg-gradient-to-b from-pink-950/35 via-fuchsia-950/30 to-purple-950/35 
+          rounded-3xl backdrop-blur-xl overflow-hidden"
+          style={{
+            aspectRatio: "3 / 4",   // ⭐ FIX — KEEPS SAME SHAPE ON ALL DEVICES
+          }}
+        >
 
           {/* TITLE */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-50/90 text-xl md:text-2xl">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-50/90 text-lg md:text-xl">
             Pop all 4 balloons
           </div>
 
-          {/* REVEAL WORDS */}
-          {["You", "are", "a", "Cutiee"].map((word, i) => {
-            const { left, top } = wordPositions[i];
-
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={popped[i] ? { opacity: 1, scale: 1 } : { opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="absolute text-xl md:text-2xl font-semibold pointer-events-none"
-                style={{
-                  left,
-                  top,
-                  transform: "translateX(-50%)",
-                }}
-              >
-                <span className="text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-fuchsia-400 to-violet-400 drop-shadow">
-                  {word}
-                </span>
-              </motion.div>
-            );
-          })}
+          {/* WORDS */}
+          {["You", "are", "a", "Cutiee"].map((word, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={popped[i] ? { opacity: 1, scale: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.45 }}
+              className="absolute text-xl md:text-2xl font-semibold pointer-events-none"
+              style={{
+                left: wordPositions[i].left,
+                top: wordPositions[i].top,
+                transform: "translateX(-50%)",
+              }}
+            >
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-fuchsia-400 to-violet-400">
+                {word}
+              </span>
+            </motion.div>
+          ))}
 
           {/* BALLOONS */}
-          {[
-            { left: "19%", top: "18%", color: "rgb(251,113,133)" },
-            { left: "38%", top: "24%", color: "rgb(245,158,11)" },
-            { left: "56.7%", top: "23%", color: "rgb(34,197,94)" },
-            { left: "75.7%", top: "18%", color: "rgb(56,189,248)" }
-          ].map((balloon, i) => (
+          {balloons.map((balloon, i) => (
             <motion.button
               key={i}
-              aria-label={`Balloon ${i + 1}`}
               disabled={popped[i]}
               onClick={() => popBalloon(i)}
               className="absolute -translate-x-1/2"
-              style={{ left: balloon.left, top: balloon.top }}
+              style={{
+                left: balloon.left,
+                top: balloon.top,
+              }}
               initial={{ scale: 1 }}
-              animate={popped[i] ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+              animate={popped[i] ? { scale: 0, opacity: 0 } : { scale: 1 }}
               transition={{ duration: 0.4 }}
             >
               <div className="relative">
                 <div
-                  className="h-24 w-20 md:h-28 md:w-22 rounded-[50%_50%_45%_45%/55%_55%_45%_45%]"
+                  className="h-16 w-14 md:h-24 md:w-20 rounded-[50%_50%_45%_45%/55%_55%_45%_45%]"
                   style={{
                     background: `
                       radial-gradient(
@@ -108,15 +108,15 @@ export default function Screen4({ onNext }) {
                 ></div>
 
                 <div
-                  className="mx-auto -mt-1 h-3 w-3 rotate-45 relative z-10"
+                  className="mx-auto -mt-1 h-2 w-2 rotate-45 relative z-10"
                   style={{ background: balloon.color }}
                 ></div>
               </div>
             </motion.button>
           ))}
 
-          {/* STRINGS BELOW BALLOONS */}
-          <svg className="pointer-events-none absolute inset-0 -z-10" width="848" height="572">
+          {/* STRINGS SVG */}
+          <svg className="pointer-events-none absolute inset-0" width="848" height="572">
             <path d="M 169.59375 217.015625 C 176.4729 297.015625, 427.4395 400.4, 424 572"
               stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
             <path d="M 339.1875 251.359375 C 341.1159 331.359375, 424.9642 400.4, 424 572"
@@ -125,11 +125,9 @@ export default function Screen4({ onNext }) {
               stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
             <path d="M 678.390625 217.015625 C 671.2803 297.015625, 420.4448 400.4, 424 572"
               stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
-            <circle cx="424" cy="572" r="5" fill="rgba(255,255,255,0.75)" />
           </svg>
 
-        </div> {/* SCALE WRAPPER END */}
-
+        </div>
       </div>
 
       {/* NEXT BUTTON */}
@@ -141,7 +139,7 @@ export default function Screen4({ onNext }) {
           className="flex justify-center mt-6"
         >
           <GradientButton onClick={onNext}>
-            Next <ArrowRight size={20} className="mt-0.5" />
+            Next <ArrowRight size={20} />
           </GradientButton>
         </motion.div>
       )}
