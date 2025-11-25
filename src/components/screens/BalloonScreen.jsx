@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -8,129 +8,154 @@ import { ArrowRight } from "lucide-react";
 export default function Screen4({ onNext }) {
   const [popped, setPopped] = useState([false, false, false, false]);
 
-  useEffect(() => {
-    fetch('/api/debug?msg=balloon-mounted').catch(() => {});
-    return () => {
-      fetch('/api/debug?msg=balloon-unmounted').catch(() => {});
-    };
-  }, []);
+  const words = ["You", "are", "a", "Cutiee"];
+
+  const positions = [
+    { left: "18%", top: "22%" },
+    { left: "38%", top: "28%" },
+    { left: "58%", top: "26%" },
+    { left: "78%", top: "22%" },
+  ];
 
   const wordPositions = [
-    { left: "16%", top: "32%" },
-    { left: "35.5%", top: "38%" },
-    { left: "55.8%", top: "38%" },
-    { left: "71%", top: "32%" },
+    { left: "18%", top: "42%" },
+    { left: "38%", top: "48%" },
+    { left: "58%", top: "48%" },
+    { left: "78%", top: "42%" },
   ];
 
-  const balloons = [
-    { left: "19%", top: "18%", color: "rgb(251,113,133)" },
-    { left: "38%", top: "24%", color: "rgb(245,158,11)" },
-    { left: "56.7%", top: "23%", color: "rgb(34,197,94)" },
-    { left: "75.7%", top: "18%", color: "rgb(56,189,248)" }
-  ];
-
-  const popBalloon = (index) => {
+  const popHeart = (i) => {
     const arr = [...popped];
-    arr[index] = true;
+    arr[i] = true;
     setPopped(arr);
   };
 
   const allPopped = popped.every(Boolean);
 
+  // Wiggle animation
+  const wiggle = {
+    animate: {
+      y: [0, -8, 0, -6, 0],
+      transition: {
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut",
+      },
+    },
+  };
+
+  // Bubble heart shape (CSS)
+  const heartStyle = (color) => ({
+    width: "70px",
+    height: "70px",
+    background: color,
+    position: "relative",
+    transform: "rotate(-45deg)",
+    borderRadius: "50% 50% 0 0",
+    boxShadow:
+      "0 0 15px rgba(255,100,200,0.7), inset 0 0 12px rgba(255,255,255,0.6)",
+    backdropFilter: "blur(2px)",
+  });
+
+  const heartBeforeAfter = {
+    content: '""',
+    position: "absolute",
+    width: "70px",
+    height: "70px",
+    background: "inherit",
+    borderRadius: "50%",
+    boxShadow:
+      "0 0 12px rgba(255,100,200,0.7), inset 0 0 10px rgba(255,255,255,0.5)",
+  };
+
   return (
     <>
-      {/* OUTER RESPONSIVE BOX WITH ASPECT RATIO */}
-      <div className="w-full flex justify-center mt-4">
+      <div className="relative w-full flex justify-center mt-4">
         <div
-          className="relative w-[95%] max-w-[600px] bg-gradient-to-b from-pink-950/35 via-fuchsia-950/30 to-purple-950/35 
-          rounded-3xl backdrop-blur-xl overflow-hidden"
-          style={{
-            aspectRatio: "3 / 4",   // ⭐ FIX — KEEPS SAME SHAPE ON ALL DEVICES
-          }}
+          className="relative w-[95%] max-w-[600px] rounded-3xl bg-gradient-to-b from-pink-950/35 via-fuchsia-900/25 to-purple-950/35 backdrop-blur-xl overflow-hidden"
+          style={{ aspectRatio: "3/4" }}
         >
-
-          {/* TITLE */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-50/90 text-lg md:text-xl">
-            Pop all 4 balloons
+          {/* Title */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-50/90 text-xl">
+            Pop the hearts 💗
           </div>
 
-          {/* WORDS */}
-          {["You", "are", "a", "Cutiee"].map((word, i) => (
+          {/* Hearts */}
+          {positions.map((pos, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={popped[i] ? { opacity: 1, scale: 1 } : { opacity: 0 }}
-              transition={{ duration: 0.45 }}
-              className="absolute text-xl md:text-2xl font-semibold pointer-events-none"
+              className="absolute"
+              style={{
+                left: pos.left,
+                top: pos.top,
+                transform: "translateX(-50%)",
+              }}
+              {...wiggle}
+            >
+              <motion.button
+                disabled={popped[i]}
+                onClick={() => popHeart(i)}
+                initial={{ scale: 1 }}
+                animate={
+                  popped[i]
+                    ? { scale: 0, opacity: 0 }
+                    : { scale: 1, opacity: 1 }
+                }
+                transition={{ duration: 0.4 }}
+                className="relative"
+              >
+                {/* Bubble Heart */}
+                <div style={heartStyle("rgba(255,120,200,0.55)")}>
+                  <div
+                    style={{
+                      ...heartBeforeAfter,
+                      top: "-35px",
+                      left: "0px",
+                    }}
+                  ></div>
+
+                  <div
+                    style={{
+                      ...heartBeforeAfter,
+                      left: "35px",
+                      top: "0px",
+                    }}
+                  ></div>
+                </div>
+
+                {/* Thread */}
+                <div className="absolute left-1/2 top-[72px] w-[2px] h-28 -translate-x-1/2 bg-pink-400 shadow-[0_0_8px_#ff4da6] opacity-90"></div>
+              </motion.button>
+            </motion.div>
+          ))}
+
+          {/* Words (reveal after pop) */}
+          {words.map((word, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-xl font-semibold pointer-events-none"
               style={{
                 left: wordPositions[i].left,
                 top: wordPositions[i].top,
                 transform: "translateX(-50%)",
               }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={
+                popped[i]
+                  ? { opacity: 1, scale: 1 }
+                  : { opacity: 0, scale: 0.8 }
+              }
+              transition={{ duration: 0.4 }}
             >
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-fuchsia-400 to-violet-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-fuchsia-300 to-purple-300 drop-shadow">
                 {word}
               </span>
             </motion.div>
           ))}
-
-          {/* BALLOONS */}
-          {balloons.map((balloon, i) => (
-            <motion.button
-              key={i}
-              disabled={popped[i]}
-              onClick={() => popBalloon(i)}
-              className="absolute -translate-x-1/2"
-              style={{
-                left: balloon.left,
-                top: balloon.top,
-              }}
-              initial={{ scale: 1 }}
-              animate={popped[i] ? { scale: 0, opacity: 0 } : { scale: 1 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div className="relative">
-                <div
-                  className="h-16 w-14 md:h-24 md:w-20 rounded-[50%_50%_45%_45%/55%_55%_45%_45%]"
-                  style={{
-                    background: `
-                      radial-gradient(
-                        60% 60% at 35% 35%, 
-                        rgba(255,255,255,0.6) 0px, 
-                        rgba(255,255,255,0.6) 26%, 
-                        transparent 27%
-                      ),
-                      linear-gradient(145deg, ${balloon.color}, rgba(255,255,255,0.3))
-                    `,
-                    boxShadow:
-                      "rgba(0,0,0,0.18) -6px -10px 16px inset, rgba(0,0,0,0.22) 0px 10px 22px",
-                  }}
-                ></div>
-
-                <div
-                  className="mx-auto -mt-1 h-2 w-2 rotate-45 relative z-10"
-                  style={{ background: balloon.color }}
-                ></div>
-              </div>
-            </motion.button>
-          ))}
-
-          {/* STRINGS SVG */}
-          <svg className="pointer-events-none absolute inset-0" width="848" height="572">
-            <path d="M 169.59375 217.015625 C 176.4729 297.015625, 427.4395 400.4, 424 572"
-              stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
-            <path d="M 339.1875 251.359375 C 341.1159 331.359375, 424.9642 400.4, 424 572"
-              stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
-            <path d="M 508.796875 251.359375 C 504.0015 331.359375, 421.6023 400.4, 424 572"
-              stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
-            <path d="M 678.390625 217.015625 C 671.2803 297.015625, 420.4448 400.4, 424 572"
-              stroke="rgba(255,255,255,0.75)" strokeWidth="1.4" fill="none" />
-          </svg>
-
         </div>
       </div>
 
-      {/* NEXT BUTTON */}
+      {/* Next Button */}
       {allPopped && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
