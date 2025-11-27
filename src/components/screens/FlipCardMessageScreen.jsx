@@ -28,7 +28,7 @@ export default function MessageScreen({ onNext }) {
         particleCount: 3,
         angle: 90,
         spread: 45,
-        shapes: ["❤️"],
+        shapes: ["heart"],
         colors: ["#ff6fa8", "#ff99c8", "#ff4d88"],
         origin: { x: Math.random(), y: -0.05 }
       });
@@ -65,7 +65,7 @@ export default function MessageScreen({ onNext }) {
               fontSize: `${20 + Math.random() * 25}px`,
             }}
           >
-            ❤️
+            
           </div>
         ))}
       </div>
