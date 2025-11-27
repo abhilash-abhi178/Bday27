@@ -1,5 +1,6 @@
 import { Kalam } from "next/font/google";
 import "./globals.css";
+import BackgroundHearts from "../components/BackgroundHearts";
 
 const kalam = Kalam({
   subsets: ["latin"],
@@ -14,9 +15,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${kalam.className} antialiased bg-black select-none`}
-      >
+      <body className={`${kalam.className} antialiased bg-black select-none`}>
+        
+        {/* 🌸 Global floating hearts background */}
+        <BackgroundHearts />
+
         {children}
       </body>
     </html>
