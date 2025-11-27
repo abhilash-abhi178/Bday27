@@ -1,170 +1,269 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import GradientButton from "../GradientButton";
 import { ArrowRight } from "lucide-react";
 
-export default function Screen4({ onNext }) {
-  const [popped, setPopped] = useState([false, false, false, false]);
+export default function ScreenFireflyHeart({ onNext }) {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const firefliesRef = useRef([]);
+  
+  // FIX: Store the start time in a ref so it doesn't reset when React re-renders
+  const formationStartTimeRef = useRef(null);
 
-  const words = ["You", "are", "a", "Cutiee"];
+  const [started, setStarted] = useState(false);
+  const [forming, setForming] = useState(false);
+  const [formed, setFormed] = useState(false);
 
-  const positions = [
-    { left: "18%", top: "22%" },
-    { left: "38%", top: "28%" },
-    { left: "58%", top: "26%" },
-    { left: "78%", top: "22%" },
-  ];
+  const FIREFLY_COUNT = 100;
+  const FORM_DURATION = 2000;
+  const VERTICAL_OFFSET = -20;
 
-  const wordPositions = [
-    { left: "18%", top: "42%" },
-    { left: "38%", top: "48%" },
-    { left: "58%", top: "48%" },
-    { left: "78%", top: "42%" },
-  ];
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
-  const popHeart = (i) => {
-    const arr = [...popped];
-    arr[i] = true;
-    setPopped(arr);
+    const ctx = canvas.getContext("2d", { alpha: true });
+    let dpr = window.devicePixelRatio || 1;
+
+    function resize() {
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // --- 1. Init Fireflies ---
+    if (firefliesRef.current.length === 0) {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      for (let i = 0; i < FIREFLY_COUNT; i++) {
+        firefliesRef.current.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
+          r: Math.random() * 1.5 + 1,
+          alpha: 0.5 + Math.random() * 0.5,
+          heartAngle: (i / FIREFLY_COUNT) * Math.PI * 2,
+          hoverOffset: Math.random() * 100,
+        });
+      }
+    }
+    const fireflies = firefliesRef.current;
+
+    // --- 2. Math ---
+    function getHeartPosition(t, scale, cx, cy) {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
+      return { x: cx + x * scale, y: cy - y * scale };
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    // --- 3. Animation ---
+    let animationFrameId;
+
+    function animate(timestamp) {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const cx = w / 2;
+      const cy = (h / 2) + VERTICAL_OFFSET;
+
+      const baseScale = Math.min(w, h) / 35;
+      const beatIntensity = 0.08;
+      const beat = Math.sin(timestamp * 0.003);
+      const currentScale = baseScale * (1 + beatIntensity * beat);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // FIX: Handle time tracking using the persistent Ref
+      if (forming && !formationStartTimeRef.current) {
+        formationStartTimeRef.current = timestamp;
+      }
+
+      let progress = 0;
+      if (forming && formationStartTimeRef.current) {
+        progress = Math.min((timestamp - formationStartTimeRef.current) / FORM_DURATION, 1);
+      }
+
+      fireflies.forEach((f) => {
+        // STATE 1: Random Floating
+        if (!forming) {
+          f.x += f.vx;
+          f.y += f.vy;
+          if (f.x < 0 || f.x > w) f.vx *= -1;
+          if (f.y < 0 || f.y > h) f.vy *= -1;
+        } 
+        // STATE 2: Forming or Formed
+        else {
+          const target = getHeartPosition(f.heartAngle, currentScale, cx, cy);
+
+          // If animation is in progress (progress < 1) move towards target
+          if (progress < 1) {
+            if (!f.startX) {
+              f.startX = f.x;
+              f.startY = f.y;
+            }
+            const ease = easeOutCubic(progress);
+            f.x = f.startX + (target.x - f.startX) * ease;
+            f.y = f.startY + (target.y - f.startY) * ease;
+          } 
+          // If progress is 1, we are fully formed -> Jitter in place
+          else {
+            const jitterX = Math.sin(timestamp * 0.002 + f.hoverOffset) * 2;
+            const jitterY = Math.cos(timestamp * 0.002 + f.hoverOffset) * 2;
+            f.x = target.x + jitterX;
+            f.y = target.y + jitterY;
+          }
+        }
+
+        // Draw
+        ctx.beginPath();
+        const glowRadius = f.r * 4;
+        const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, glowRadius);
+        grad.addColorStop(0, `rgba(255, 220, 140, ${f.alpha})`);
+        grad.addColorStop(1, "rgba(255, 220, 140, 0)");
+        ctx.fillStyle = grad;
+        ctx.arc(f.x, f.y, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255, 255, 240, 1)";
+        ctx.arc(f.x, f.y, f.r * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Trigger the "Formed" state (UI Text) only once when animation is done
+      if (forming && progress >= 1 && !formed) {
+        setFormed(true);
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [started, forming, formed]); // Dependencies can stay, the Ref fixes the logic error
+
+  const handleStart = () => {
+    if (started) return;
+    setStarted(true);
+    setTimeout(() => {
+      setForming(true);
+    }, 200);
   };
 
-  const allPopped = popped.every(Boolean);
-
-  // Wiggle animation
-  const wiggle = {
-    animate: {
-      y: [0, -8, 0, -6, 0],
+  // --- Typewriter Variants ---
+  const sentenceVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
       transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut",
+        delay: 0.5,
+        staggerChildren: 0.12, // Speed: Higher = Slower
       },
     },
   };
 
-  // Bubble heart shape (CSS)
-  const heartStyle = (color) => ({
-    width: "70px",
-    height: "70px",
-    background: color,
-    position: "relative",
-    transform: "rotate(-45deg)",
-    borderRadius: "50% 50% 0 0",
-    boxShadow:
-      "0 0 15px rgba(255,100,200,0.7), inset 0 0 12px rgba(255,255,255,0.6)",
-    backdropFilter: "blur(2px)",
-  });
-
-  const heartBeforeAfter = {
-    content: '""',
-    position: "absolute",
-    width: "70px",
-    height: "70px",
-    background: "inherit",
-    borderRadius: "50%",
-    boxShadow:
-      "0 0 12px rgba(255,100,200,0.7), inset 0 0 10px rgba(255,255,255,0.5)",
+  const letterVariants = {
+    hidden: { opacity: 0, y: 0 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0 },
+    },
   };
 
   return (
     <>
-      <div className="relative w-full flex justify-center mt-4">
+      <div className="w-full flex justify-center mt-4">
         <div
-          className="relative w-[95%] max-w-[600px] rounded-3xl bg-gradient-to-b from-pink-950/35 via-fuchsia-900/25 to-purple-950/35 backdrop-blur-xl overflow-hidden"
-          style={{ aspectRatio: "3/4" }}
+          ref={containerRef}
+          className="relative w-[95%] max-w-[600px] rounded-3xl overflow-hidden shadow-2xl border border-white/5"
+          style={{
+            aspectRatio: "3/4",
+            background: "linear-gradient(to bottom, #050505, #1a1025)",
+          }}
+          onClick={handleStart}
         >
-          {/* Title */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-50/90 text-xl">
-            Pop the hearts 💗
-          </div>
+          <canvas ref={canvasRef} className="absolute inset-0 block w-full h-full" />
 
-          {/* Hearts */}
-          {positions.map((pos, i) => (
+          {!started && (
             <motion.div
-              key={i}
-              className="absolute"
-              style={{
-                left: pos.left,
-                top: pos.top,
-                transform: "translateX(-50%)",
-              }}
-              {...wiggle}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute left-1/2 top-[45%] -translate-x-1/2 text-amber-100/60 text-lg pointer-events-none"
             >
-              <motion.button
-                disabled={popped[i]}
-                onClick={() => popHeart(i)}
-                initial={{ scale: 1 }}
-                animate={
-                  popped[i]
-                    ? { scale: 0, opacity: 0 }
-                    : { scale: 1, opacity: 1 }
-                }
-                transition={{ duration: 0.4 }}
-                className="relative"
+              Tap anywhere ✨
+            </motion.div>
+          )}
+
+          {formed && (
+            <motion.div
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center justify-center w-full"
+              style={{ marginTop: `${VERTICAL_OFFSET}px` }}
+            >
+              <motion.h2
+                variants={sentenceVariants}
+                initial="hidden"
+                animate="visible"
+                className="text-2xl md:text-4xl font-bold text-center leading-tight"
               >
-                {/* Bubble Heart */}
-                <div style={heartStyle("rgba(255,120,200,0.55)")}>
-                  <div
-                    style={{
-                      ...heartBeforeAfter,
-                      top: "-35px",
-                      left: "0px",
-                    }}
-                  ></div>
+                <span className="block text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-200 to-yellow-500 drop-shadow-[0_0_25px_rgba(255,200,0,0.5)]">
+                  {"Happy Birthday".split("").map((char, index) => (
+                    <motion.span key={index} variants={letterVariants}>
+                      {char}
+                    </motion.span>
+                  ))}
+                </span>
 
-                  <div
-                    style={{
-                      ...heartBeforeAfter,
-                      left: "35px",
-                      top: "0px",
-                    }}
-                  ></div>
-                </div>
-
-                {/* Thread */}
-                <div className="absolute left-1/2 top-[72px] w-[2px] h-28 -translate-x-1/2 bg-pink-400 shadow-[0_0_8px_#ff4da6] opacity-90"></div>
-              </motion.button>
+                <span className="block mt-2">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-200 to-yellow-500 drop-shadow-[0_0_25px_rgba(255,200,0,0.5)]">
+                    {"Princess ".split("").map((char, index) => (
+                      <motion.span key={index} variants={letterVariants}>
+                        {char}
+                      </motion.span>
+                    ))}
+                  </span>
+                  
+                  <motion.span variants={letterVariants} className="text-white drop-shadow-[0_0_8px_rgba(255,100,150,0.8)]">
+                    💓
+                  </motion.span>
+                  <motion.span variants={letterVariants} className="text-white drop-shadow-[0_0_8px_rgba(255,100,150,0.8)]">
+                    ✨
+                  </motion.span>
+                </span>
+              </motion.h2>
             </motion.div>
-          ))}
-
-          {/* Words (reveal after pop) */}
-          {words.map((word, i) => (
-            <motion.div
-              key={i}
-              className="absolute text-xl font-semibold pointer-events-none"
-              style={{
-                left: wordPositions[i].left,
-                top: wordPositions[i].top,
-                transform: "translateX(-50%)",
-              }}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={
-                popped[i]
-                  ? { opacity: 1, scale: 1 }
-                  : { opacity: 0, scale: 0.8 }
-              }
-              transition={{ duration: 0.4 }}
-            >
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-fuchsia-300 to-purple-300 drop-shadow">
-                {word}
-              </span>
-            </motion.div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Next Button */}
-      {allPopped && (
+      {formed && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex justify-center mt-6"
+          transition={{ delay: 3.5 }}
+          className="flex justify-center mt-8"
         >
           <GradientButton onClick={onNext}>
-            Next <ArrowRight size={20} />
+            Next <ArrowRight size={18} className="ml-2" />
           </GradientButton>
         </motion.div>
       )}
