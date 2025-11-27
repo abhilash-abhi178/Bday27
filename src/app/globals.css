@@ -605,3 +605,62 @@ button { cursor: pointer; }
   0% { transform: translateY(0px); opacity: 1; }
   100% { transform: translateY(-160px); opacity: 0; }
 }
+
+/* Global background + grid for the nested birthday-v3 project */
+body {
+  background-color: #07060a;
+  background-image:
+    radial-gradient(circle at 12% 80%, rgba(186,66,255,0.03), transparent 6%),
+    linear-gradient(180deg, rgba(6,6,8,1), rgba(12,8,18,1)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px, transparent 40px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
+  background-blend-mode: overlay, normal, overlay, overlay;
+  color: #fff;
+}
+/* ===============================
+   Floating Heart Drift Animation
+   =============================== */
+
+@keyframes drift {
+  0% {
+    transform: translateY(20px) translateX(0px) rotate(0deg);
+    opacity: 0.20;
+  }
+  50% {
+    transform: translateY(-40px) translateX(25px) rotate(10deg);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(20px) translateX(-20px) rotate(-8deg);
+    opacity: 0.20;
+  }
+}
+
+.heart-drift {
+  position: absolute;
+  will-change: transform, opacity;
+  pointer-events: none; /* ensures hearts don't block clicks */
+}
+
+/* ensure SVG hearts render crisply and inherit color */
+.heart-drift svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.18;
+  will-change: transform, opacity;
+}
+
+/* subtle grid overlay on top of the base background */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px, transparent 40px);
+  mix-blend-mode: overlay;
+  opacity: 0.7;
+}
